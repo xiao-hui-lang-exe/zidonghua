@@ -1,5 +1,5 @@
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import hashes, hmac
+from cryptography.hazmat.primitives import constant_time
 import base64
 
 class CryptoHandler:
@@ -12,7 +12,5 @@ class CryptoHandler:
         return base64.b64encode(ct).decode()
 
     @staticmethod
-    def generate_signature(app_id: str, secret: str, timestamp: str) -> str:
-        signer = hmac.HMAC(secret.encode(), hashes.SHA256())
-        signer.update(f"{app_id}{timestamp}".encode())
-        return base64.b64encode(signer.finalize()).decode()
+    def secure_compare(a: str, b: str) -> bool:
+      return constant_time.bytes_eq(a.encode(), b.encode())
