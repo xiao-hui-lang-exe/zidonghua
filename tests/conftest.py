@@ -1,42 +1,53 @@
 import pytest
 import yaml
 from pathlib import Path
-from typing import List, Dict, Any  # 添加显式类型导入
+from typing import List, Dict, Any
 from config.settings import Config
 from src.core.api_client import FineAPIClient
 
 
-def load_test_data(filename: str) -> List[Dict[str, Any]]:  # 添加显式返回类型
-    """加载测试数据文件"""
+def load_test_data(filename: str, app_id: str) -> List[Dict[str, Any]]:
+    """加载测试数据文件并动态替换占位符"""
     data_path = Path(__file__).parent / "data" / filename
     try:
         with open(data_path, 'r', encoding='utf-8') as f:
             data = yaml.safe_load(f)
-            return data if data else []  # 确保始终返回列表
+
+            # 动态替换占位符
+            for item in data:
+                if 'username' in item and '${APP_ID}' in item['username']:
+                    item['username'] = item['username'].replace('${APP_ID}', app_id)
+
+            return data if data else []
     except Exception as e:
         pytest.fail(f"加载测试数据失败: {str(e)}")
-        return []  # 添加显式return语句
+        return []
 
 
 @pytest.fixture(scope="session")
-def config() -> Config:  # 添加返回类型注解
+def config() -> Config:
     """配置对象fixture"""
-    return Config(env='test')  # 显式return语句
+    return Config(env='test')
 
 
 @pytest.fixture(scope="module")
-def api_client(config: Config) -> FineAPIClient:  # 添加类型注解
+def api_client(config: Config) -> FineAPIClient:
     """API客户端fixture"""
     client = FineAPIClient(config)
-
-    # 修复拼写：使用 'test_user' 代替 'testuser'
-    username = config.app_id + "_test_user"  # 修正拼写错误
+    username = config.app_id + "_test_user"  # 修复拼写错误
     password = "TestPassword123!"
 
     try:
         token = client.login(username, password)
         assert token, "登录失败，未获取到token"
-        return client  # 显式return语句
+        return client
     except Exception as e:
         pytest.fail(f"API客户端初始化失败: {str(e)}")
-        return client  # 添加显式return语句
+        return client
+
+
+# 新增：每个测试函数使用的客户端fixture
+@pytest.fixture(scope="function")
+def test_client(config: Config) -> FineAPIClient:
+    """为每个测试函数创建独立的API客户端"""
+    return FineAPIClient(config)

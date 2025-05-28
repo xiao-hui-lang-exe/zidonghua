@@ -3,10 +3,8 @@ import logging
 import json
 from typing import Dict, Optional, Any
 from src.core.crypto_utils import CryptoUtils
-# 移除未使用的 import: from src.core.exceptions import SignatureVerificationError
-from src.core.exceptions import APIRequestError, EncryptionError  # 只导入需要的异常
+from src.core.exceptions import APIRequestError, EncryptionError
 from config.settings import Config
-
 
 # 配置日志
 logger = logging.getLogger('api_client')
@@ -50,11 +48,18 @@ class FineAPIClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.HTTPError as e:
-            error_msg = f"HTTP错误: {e.response.status_code} - {e.response.text}"
+            # 提取状态码和错误信息
+            status_code = e.response.status_code
+            try:
+                error_data = e.response.json()
+                error_msg = f"{error_data.get('error', 'Unknown error')} (HTTP {status_code})"
+            except json.JSONDecodeError:
+                error_msg = f"HTTP错误 {status_code}: {e.response.text}"
+
             self.logger.error(error_msg)
             raise APIRequestError(
                 error_msg,
-                status_code=e.response.status_code,
+                status_code=status_code,
                 response=e.response
             )
         except json.JSONDecodeError:
@@ -80,6 +85,14 @@ class FineAPIClient:
                     raise EncryptionError(f"加密字段 {key} 失败: {str(e)}")
             else:
                 encrypted_payload[key] = value
+
+        # 日志脱敏：记录前隐藏敏感数据
+        sanitized_payload = {
+            k: "***" if k in ["password", "token"] else v
+            for k, v in encrypted_payload.items()
+        }
+        self.logger.debug(f"加密后的请求体: {sanitized_payload}")
+
         return encrypted_payload
 
     def login(self, username: str, password: str) -> str:
@@ -102,7 +115,7 @@ class FineAPIClient:
 
         # 发送请求
         headers = self._build_headers()
-        self.logger.info(f"登录请求: {url}, 请求头: {headers}")
+        self.logger.info(f"登录请求: {url}")
 
         try:
             response = self.session.post(
@@ -119,6 +132,7 @@ class FineAPIClient:
         except Exception as e:
             self.logger.error(f"登录失败: {str(e)}")
             raise
+
 
     def get(self, endpoint: str, params: Optional[Dict] = None, headers: Optional[Dict] = None) -> Dict:
         """发送GET请求"""

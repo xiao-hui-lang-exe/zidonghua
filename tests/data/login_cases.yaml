@@ -1,11 +1,10 @@
 - case_id: "valid_login"
-  # 修复拼写：使用 'test_user' 代替 'testuser'
-  username: "${APP_ID}_test_user"  # 修正拼写错误
+  username: "${APP_ID}_test_user"  # 占位符将在运行时替换
   password: "TestPassword123!"
   expected_status: 200
 
 - case_id: "invalid_password"
-  username: "${APP_ID}_test_user"  # 修正拼写错误
+  username: "${APP_ID}_test_user"
   password: "WrongPassword123!"
   expected_status: 401
 
@@ -15,7 +14,7 @@
   expected_status: 404
 
 - case_id: "missing_password"
-  username: "${APP_ID}_test_user"  # 修正拼写
+  username: "${APP_ID}_test_user"
   password: ""
   expected_status: 400
 

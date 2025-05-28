@@ -1,6 +1,7 @@
 import os
 import base64
 from dotenv import load_dotenv
+from cryptography.exceptions import InvalidKey  # 新增导入
 
 
 class Config:
@@ -22,6 +23,10 @@ class Config:
 
         aes_iv_str = os.getenv("AES_IV", "")
         self.aes_iv = base64.b64decode(aes_iv_str) if aes_iv_str else b""
+
+        # 新增：验证AES密钥长度
+        if self.aes_key and len(self.aes_key) not in [16, 24, 32]:
+            raise InvalidKey(f"无效的AES密钥长度: {len(self.aes_key)}字节。必须是16, 24或32字节")
 
         self.timeout = int(os.getenv("TIMEOUT", "10"))
         self.enable_ssl_verify = os.getenv("ENABLE_SSL_VERIFY", "true").lower() == "true"
