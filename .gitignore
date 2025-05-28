@@ -1,0 +1,12 @@
+# 环境文件
+.env*
+!.env.example
+
+# 日志文件
+*.log
+logs/
+
+# 测试报告
+reports/
+test-results.xml
+coverage

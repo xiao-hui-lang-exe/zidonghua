@@ -1,15 +1,25 @@
-import os
-from dotenv import load_dotenv
+- case_id: "valid_login"
+  # 修复拼写：使用 'test_user' 代替 'testuser'
+  username: "${APP_ID}_test_user"  # 修正拼写错误
+  password: "TestPassword123!"
+  expected_status: 200
 
-class Config:
-    def __init__(self, env='test'):
-        load_dotenv()  # 从.env加载敏感信息
-        self.base_url = os.getenv("BASE_URL", "https://api.fine-system.com")
-        self.app_id = os.getenv("FINE_APP_ID")
-        self.app_secret = os.getenv("FINE_APP_SECRET")
-        self.aes_key = base64.b64decode(os.getenv("AES_KEY"))
-        self.aes_iv = base64.b64decode(os.getenv("AES_IV"))
+- case_id: "invalid_password"
+  username: "${APP_ID}_test_user"  # 修正拼写错误
+  password: "WrongPassword123!"
+  expected_status: 401
 
-    @property
-    def public_key_path(self):
-        return os.path.join("config/security", "public_key.pem")
+- case_id: "invalid_username"
+  username: "nonexistent_user"
+  password: "AnyPassword123!"
+  expected_status: 404
+
+- case_id: "missing_password"
+  username: "${APP_ID}_test_user"  # 修正拼写
+  password: ""
+  expected_status: 400
+
+- case_id: "malformed_username"
+  username: "invalid@user@name"
+  password: "TestPassword123!"
+  expected_status: 400
